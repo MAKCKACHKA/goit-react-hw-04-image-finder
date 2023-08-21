@@ -1,14 +1,11 @@
-import { Component } from 'react';
 import css from 'styles.module.css';
 
-class Button extends Component {
-  render() {
-    return (
-      <button className={css.Button} onClick={this.props.increasePage}>
-        Load more
-      </button>
-    );
-  }
-}
+const Button = ({ increasePage }) => {
+  return (
+    <button type="button" className={css.Button} onClick={increasePage}>
+      Load more
+    </button>
+  );
+};
 
 export default Button;

@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import Searchbar from './Searchbar';
 import ImageGallery from './ImageGallery';
 import Button from './Button';
@@ -10,12 +10,14 @@ const BASE_URL = 'https://pixabay.com/api';
 const API_KEY = '37857814-b0d9639b296a6cf0b457a26a6';
 
 const getImage = async (searchText, page) => {
-  return fetch(`${BASE_URL}/?q=${searchText}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12
-`);
+  const response = await fetch(
+    `${BASE_URL}/?q=${searchText}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`
+  );
+  return response.json();
 };
 
-export class App extends Component {
-  state = {
+export const App = () => {
+  const [state, setState] = useState({
     searchText: '',
     images: null,
     isLoading: false,
@@ -23,37 +25,50 @@ export class App extends Component {
     page: 1,
     selectedImage: null,
     showModal: false,
+  });
+
+  const handleSearch = searchText => {
+    setState(prevState => ({
+      ...prevState,
+      searchText,
+    }));
   };
 
-  handleSearch = searchText => {
-    this.setState({ searchText });
-  };
+  useEffect(() => {
+    if (state.searchText) {
+      setState(prevState => ({
+        ...prevState,
+        isLoading: true,
+        images: [],
+        page: 1,
+      }));
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.searchText !== this.state.searchText) {
-      this.setState({ isLoading: true, images: [], page: 1 });
-
-      getImage(this.state.searchText, this.state.page)
-        .then(response => response.json())
+      getImage(state.searchText, state.page)
         .then(data => {
-          this.setState({ images: data.hits, isLoading: false });
+          setState(prevState => ({
+            ...prevState,
+            images: data.hits,
+            isLoading: false,
+          }));
         })
         .catch(error => {
           console.error('error', error);
-          this.setState({ error: error.message });
-        })
-        .finally(() => {
-          this.setState({ isLoading: false });
+          setState(prevState => ({
+            ...prevState,
+            error: error.message,
+            isLoading: false,
+          }));
         });
     }
-  }
-  increasePage = () => {
-    const nextPage = this.state.page + 1;
+  }, [state.searchText, state.page]);
 
-    getImage(this.state.searchText, nextPage)
-      .then(response => response.json())
+  const increasePage = () => {
+    const nextPage = state.page + 1;
+
+    getImage(state.searchText, nextPage)
       .then(data => {
-        this.setState(prevState => ({
+        setState(prevState => ({
+          ...prevState,
           page: nextPage,
           images: [...prevState.images, ...data.hits],
         }));
@@ -62,44 +77,52 @@ export class App extends Component {
         console.error('error', error);
       });
   };
-  openModal = image => {
-    this.setState({ showModal: true, selectedImage: image });
-    document.addEventListener('keydown', this.handleEscKey);
+
+  const openModal = image => {
+    setState(prevState => ({
+      ...prevState,
+      showModal: true,
+      selectedImage: image,
+    }));
+
+    document.addEventListener('keydown', handleEscKey);
   };
 
-  closeModal = () => {
-    this.setState({ showModal: false, selectedImage: null });
-    document.removeEventListener('keydown', this.handleEscKey);
+  const closeModal = () => {
+    setState(prevState => ({
+      ...prevState,
+      showModal: false,
+      selectedImage: null,
+    }));
+    document.removeEventListener('keydown', handleEscKey);
   };
 
-  handleEscKey = event => {
+  const handleEscKey = event => {
     if (event.key === 'Escape') {
-      this.closeModal();
+      closeModal();
     }
   };
-  resetPage = () => {
-    this.setState({ page: 1 });
+  const resetPage = () => {
+    setState(prevState => ({
+      ...prevState,
+      page: 1,
+    }));
   };
 
-  render() {
-    const { images, isLoading, page, selectedImage, showModal } = this.state;
+  const { images, isLoading, page, selectedImage, showModal } = state;
 
-    return (
-      <div className={css.App}>
-        <Searchbar
-          handleSearch={this.handleSearch}
-          resetPage={this.resetPage}
-        />
-        <ImageGallery images={images} openModal={this.openModal} />
-        {isLoading && <Loader />}
-        {images && images.length > 0 && (
-          <Button increasePage={this.increasePage} page={page} />
-        )}
+  return (
+    <div className={css.App}>
+      <Searchbar handleSearch={handleSearch} resetPage={resetPage} />
+      <ImageGallery images={images} openModal={openModal} />
+      {isLoading && <Loader />}
+      {images && images.length > 0 && (
+        <Button increasePage={increasePage} page={page} />
+      )}
 
-        {showModal && selectedImage && (
-          <Modal closeModal={this.closeModal} selectedImage={selectedImage} />
-        )}
-      </div>
-    );
-  }
-}
+      {showModal && selectedImage && (
+        <Modal closeModal={closeModal} selectedImage={selectedImage} />
+      )}
+    </div>
+  );
+};
