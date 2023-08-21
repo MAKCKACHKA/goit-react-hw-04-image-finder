@@ -43,7 +43,7 @@ export const App = () => {
         page: 1,
       }));
 
-      getImage(state.searchText, state.page)
+      getImage(state.searchText)
         .then(data => {
           setState(prevState => ({
             ...prevState,
@@ -60,7 +60,7 @@ export const App = () => {
           }));
         });
     }
-  }, [state.searchText, state.page]);
+  }, [state.searchText]);
 
   const increasePage = () => {
     const nextPage = state.page + 1;
